@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.github.abhijitkrm</groupId>
+  <artifactId>matcher</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <name>matcher</name>
+  <description>Deterministic FIFO order-matching engine — up to ~11M orders/sec</description>
+  <url>https://github.com/abhijitkrm/matcher-java</url>
+
+  <licenses>
+    <license><name>MIT</name><url>https://opensource.org/licenses/MIT</url></license>
+    <license><name>Apache-2.0</name><url>https://www.apache.org/licenses/LICENSE-2.0</url></license>
+  </licenses>
+
+  <properties>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <build>
+    <plugins>
+      <!-- Golden vectors run as an exec during test phase -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>golden-vectors</id>
+            <phase>test</phase>
+            <goals><goal>java</goal></goals>
+            <configuration>
+              <mainClass>Golden</mainClass>
+              <arguments><argument>vectors</argument></arguments>
+              <classpathScope>test</classpathScope>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <testExcludes><exclude>bench/**</exclude></testExcludes>
+          <testSourceDirectory>${basedir}/tests</testSourceDirectory>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
