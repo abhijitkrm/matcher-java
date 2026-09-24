@@ -67,21 +67,28 @@ public final class Types {
         record Replaced(long orderId, long price, long qty) implements Event {}
 
         /// Canonical event line (SCHEMA.md) — no trailing newline.
-        static String canonical(long seq, Event ev) {
+        static String canonical(long seq, Event ev) { return canonical(seq, "", ev); }
+
+        /// Canonical line for `engine:true` vectors: `"symbol":N` after `ev`.
+        static String canonical(long seq, long sym, Event ev) {
+            return canonical(seq, ",\"symbol\":" + sym, ev);
+        }
+
+        private static String canonical(long seq, String symField, Event ev) {
             if (ev instanceof Accepted e)
-                return "{\"seq\":" + seq + ",\"ev\":\"accepted\",\"order_id\":" + e.orderId
+                return "{\"seq\":" + seq + ",\"ev\":\"accepted\"" + symField + ",\"order_id\":" + e.orderId
                         + ",\"leaves_qty\":" + e.leavesQty + "}";
             if (ev instanceof Rejected e)
-                return "{\"seq\":" + seq + ",\"ev\":\"rejected\",\"order_id\":" + e.orderId
+                return "{\"seq\":" + seq + ",\"ev\":\"rejected\"" + symField + ",\"order_id\":" + e.orderId
                         + ",\"reason\":\"" + e.reason.str() + "\"}";
             if (ev instanceof Trade e)
-                return "{\"seq\":" + seq + ",\"ev\":\"trade\",\"maker\":" + e.maker
+                return "{\"seq\":" + seq + ",\"ev\":\"trade\"" + symField + ",\"maker\":" + e.maker
                         + ",\"taker\":" + e.taker + ",\"price\":" + e.price + ",\"qty\":" + e.qty + "}";
             if (ev instanceof Closed e)
-                return "{\"seq\":" + seq + ",\"ev\":\"closed\",\"order_id\":" + e.orderId
+                return "{\"seq\":" + seq + ",\"ev\":\"closed\"" + symField + ",\"order_id\":" + e.orderId
                         + ",\"reason\":\"" + e.reason.str() + "\"}";
             Replaced e = (Replaced) ev;
-            return "{\"seq\":" + seq + ",\"ev\":\"replaced\",\"order_id\":" + e.orderId
+            return "{\"seq\":" + seq + ",\"ev\":\"replaced\"" + symField + ",\"order_id\":" + e.orderId
                     + ",\"price\":" + e.price + ",\"qty\":" + e.qty + "}";
         }
 

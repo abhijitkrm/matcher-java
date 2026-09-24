@@ -2,11 +2,13 @@
 //! canonical event serialization diffed against *.evt.jsonl.
 //!   java -cp out Golden <vectors-dir>
 
+import io.github.abhijitkrm.matcher.Engine;
 import io.github.abhijitkrm.matcher.JsonFlat;
 import io.github.abhijitkrm.matcher.OrderBook;
 import io.github.abhijitkrm.matcher.PriceIndex;
 import io.github.abhijitkrm.matcher.Sink;
 import io.github.abhijitkrm.matcher.Types.Command;
+import io.github.abhijitkrm.matcher.Types.Event;
 import io.github.abhijitkrm.matcher.Types.OType;
 import io.github.abhijitkrm.matcher.Types.Side;
 import io.github.abhijitkrm.matcher.Types.Tif;
@@ -18,6 +20,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public final class Golden {
+
+    static long parseSym(String line) {
+        Long s = JsonFlat.getLong(line, "symbol");
+        return s == null ? 0 : s;
+    }
 
     static Command parseCommand(String line) {
         String cmd = JsonFlat.get(line, "cmd");
@@ -58,7 +65,20 @@ public final class Golden {
 
     static String runVector(Path cmdPath, PriceIndex.Kind mode) throws IOException {
         List<String> lines = Files.readAllLines(cmdPath);
-        OrderBook book = new OrderBook(parseHeader(lines.get(0), mode));
+        OrderBook.Config cfg = parseHeader(lines.get(0), mode);
+        if ("true".equals(JsonFlat.get(lines.get(0), "engine"))) {
+            Engine eng = new Engine(cfg);
+            StringBuilder out = new StringBuilder();
+            for (int i = 1; i < lines.size(); i++) {
+                if (lines.get(i).isEmpty()) continue;
+                long sym = parseSym(lines.get(i));
+                Command cmd = parseCommand(lines.get(i));
+                eng.apply(sym, cmd, (seq, ev) ->
+                        out.append(Event.canonical(seq, sym, ev)).append('\n'));
+            }
+            return out.toString();
+        }
+        OrderBook book = new OrderBook(cfg);
         Sink.Vec sink = new Sink.Vec();
         for (int i = 1; i < lines.size(); i++) {
             if (!lines.get(i).isEmpty()) book.apply(parseCommand(lines.get(i)), sink);
