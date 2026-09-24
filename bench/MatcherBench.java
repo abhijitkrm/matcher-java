@@ -89,9 +89,10 @@ public final class MatcherBench {
 
         Arrays.sort(lat);
         double ops = run.length * 1e9 / totalNs;
-        System.out.printf("%s: %d ops in %.1fms => %,.0f ops/s p50=%dns p99=%dns max=%dns checksum=%d%n",
+        System.out.printf("%s: %d ops in %.1fms => %,.0f ops/s p50=%dns p90=%dns p99=%dns p99.9=%dns max=%dns checksum=%d%n",
                 tag, run.length, totalNs / 1e6, ops,
-                lat[(int) (lat.length * 0.50)], lat[(int) (lat.length * 0.99)],
+                lat[(int) (lat.length * 0.50)], lat[(int) (lat.length * 0.90)],
+                lat[(int) (lat.length * 0.99)], lat[(int) (lat.length * 0.999)],
                 lat[lat.length - 1], sink.acc);
     }
 }
