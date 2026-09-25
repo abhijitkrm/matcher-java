@@ -51,11 +51,13 @@ final class Pool {
         lvl.tail = i;
     }
 
+    /// Unlink `i` from anywhere in `lvl` and adjust the level total.
     void levelUnlink(PriceIndex.Level lvl, int i) {
         int p = prev[i], n = next[i];
         if (p != NIL) next[p] = n; else lvl.head = n;
         if (n != NIL) prev[n] = p; else lvl.tail = p;
         prev[i] = next[i] = NIL;
+        lvl.total -= qty[i];
     }
 
     void set(int i, long oid, Side s, OType ot, Tif t, long p, long q) {
