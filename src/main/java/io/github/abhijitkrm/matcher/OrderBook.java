@@ -80,7 +80,7 @@ public final class OrderBook {
         if (remaining == 0) {
             emit(sink, new Event.Closed(orderId, CloseReason.Filled));
         } else if (otype == OType.Limit && (tif == Tif.Gtc || tif == Tif.PostOnly)) {
-            rest(orderId, side, price, remaining);
+            rest(orderId, side, price, remaining, tif);
             emit(sink, new Event.Accepted(orderId, remaining));
         } else {
             emit(sink, new Event.Closed(orderId, CloseReason.Expired));
@@ -191,9 +191,9 @@ public final class OrderBook {
 
     /// Insert a resting order (pool slot guaranteed available by the book-full
     /// check at ingest).
-    private void rest(long orderId, Side side, long price, long qty) {
+    private void rest(long orderId, Side side, long price, long qty, Tif tif) {
         int idx = pool.alloc();
-        pool.set(idx, orderId, side, OType.Limit, Tif.Gtc, price, qty);
+        pool.set(idx, orderId, side, OType.Limit, tif, price, qty);
         PriceIndex own = side == Side.Bid ? bids : asks;
         Level lvl = own.levelInsert(price);
         lvl.total += qty;
@@ -217,6 +217,49 @@ public final class OrderBook {
     public java.util.List<PriceIndex.Depth> depth(Side s, int n) {
         return (s == Side.Bid ? bids : asks).depth(n);
     }
+
+    // ---- snapshot surface (spec/JOURNAL.md) ----
+
+    /// One live order, for snapshot serialization.
+    public record RestingOrder(long orderId, Side side, long price, long qty, Tif tif) {}
+
+    /// All live orders in book order: bids best→worst then asks best→worst,
+    /// FIFO within each level.
+    public java.util.List<RestingOrder> restingOrders() {
+        var out = new java.util.ArrayList<RestingOrder>(pool.live);
+        for (Side s : new Side[]{Side.Bid, Side.Ask}) {
+            PriceIndex idx = s == Side.Bid ? bids : asks;
+            for (PriceIndex.Depth d : idx.depth(Integer.MAX_VALUE)) {
+                Level lvl = idx.levelMut(d.price());
+                if (lvl == null) continue;
+                for (int i = lvl.head; i != Pool.NIL; i = pool.next[i]) {
+                    out.add(new RestingOrder(pool.id[i], Side.values()[pool.side[i]],
+                            pool.price[i], pool.qty[i], Tif.values()[pool.tif[i]]));
+                }
+            }
+        }
+        return out;
+    }
+
+    /// Rebuild a book from a snapshot: same config, explicit seq, resting
+    /// orders replayed in snapshot order (bids then asks, FIFO per level).
+    public static OrderBook restore(Config cfg, long seq,
+                                    java.util.List<RestingOrder> orders) {
+        OrderBook b = new OrderBook(cfg);
+        b.seq = seq;
+        for (RestingOrder o : orders) {
+            int idx = b.pool.alloc();
+            if (idx == Pool.NIL) break;
+            b.pool.set(idx, o.orderId(), o.side(), OType.Limit, o.tif(), o.price(), o.qty());
+            Level lvl = (o.side() == Side.Bid ? b.bids : b.asks).levelInsert(o.price());
+            lvl.total += o.qty();
+            b.pool.levelPush(lvl, idx);
+            b.map.insert(o.orderId(), idx);
+        }
+        return b;
+    }
+
+    public Config config() { return cfg; }
 
     // ---- internals ----
 

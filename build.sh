@@ -5,5 +5,6 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 mkdir -p out
-javac -d out --release 17 src/main/java/io/github/abhijitkrm/matcher/*.java tests/Golden.java bench/MatcherBench.java
+javac -d out --release 17 src/main/java/io/github/abhijitkrm/matcher/*.java tests/Golden.java tests/SnapshotTest.java bench/MatcherBench.java
 java -cp out Golden vectors
+java -cp out SnapshotTest vectors
