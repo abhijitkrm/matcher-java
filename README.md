@@ -59,7 +59,7 @@ tools/                vectorgen — deterministic workload generator
 ## Test & bench
 
 ```bash
-./build.sh         # javac + 41 golden vectors — no Maven required
+./build.sh         # javac + 43 golden vectors — no Maven required
 
 # benchmark (see spec/BENCH.md)
 mkdir -p bench/corpora
