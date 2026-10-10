@@ -27,7 +27,7 @@ book.apply(Command.newLimit(2, Types.Side.Bid, 100, 4, Types.Tif.Gtc), sink);
 <dependency>
   <groupId>io.github.abhijitkrm</groupId>
   <artifactId>matcher</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
